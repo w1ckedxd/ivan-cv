@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ivan — Full-Cycle Product Developer</title>
+<style>
+  /* ---------- Design tokens ----------
+     Clean, recruiter/agency-friendly. One restrained accent.
+     Deliberately NOT the riso "broadsheet" look. */
+  :root {
+    --ink:      #16181d;   /* near-black body text */
+    --ink-soft: #4a4f57;   /* secondary text      */
+    --ink-faint:#878d97;   /* meta / labels       */
+    --accent:   #0f766e;   /* teal — product, trustworthy, not generic blue */
+    --accent-soft:#e6f2f0;
+    --rule:     #e4e6ea;
+    --paper:    #ffffff;
+    --maxw:     760px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; background: #f3f4f6; }
+
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    line-height: 1.5;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: var(--maxw);
+    margin: 28px auto;
+    background: var(--paper);
+    padding: 44px 52px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+    border-radius: 4px;
+  }
+
+  /* ---------- Header ---------- */
+  header { margin-bottom: 22px; }
+  .name {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 4px 0 2px;
+  }
+  .tagline {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+  }
+  .contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+  }
+  .contact span { white-space: nowrap; }
+  .contact b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: 20px; }
+  h2 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 10px;
+  }
+
+  .summary { font-size: 13.5px; color: var(--ink-soft); margin: 0; }
+  .summary strong { color: var(--ink); font-weight: 600; }
+
+  .specialty {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 4px 4px 0;
+    font-size: 13px;
+  }
+  .specialty b { color: var(--accent); }
+
+  /* ---------- Skills ---------- */
+  .skills { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; }
+  .skill { font-size: 12.5px; }
+  .skill .k { font-weight: 600; color: var(--ink); }
+  .skill .v { color: var(--ink-soft); }
+
+  /* ---------- Projects / experience ---------- */
+  .item { margin-bottom: 15px; }
+  .item:last-child { margin-bottom: 0; }
+  .item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .item-title { font-size: 14px; font-weight: 700; margin: 0; }
+  .item-meta  { font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+  .item-desc  { font-size: 12.5px; color: var(--ink-soft); margin: 2px 0 6px; }
+  .bullets { margin: 0; padding-left: 16px; }
+  .bullets li { font-size: 12.5px; color: var(--ink-soft); margin: 2px 0; }
+  .stack { font-size: 11.5px; color: var(--ink-faint); margin-top: 5px; }
+  .stack b { color: var(--ink-soft); font-weight: 600; }
+
+  .edu-line { display: flex; justify-content: space-between; font-size: 13px; }
+  .edu-line .deg { font-weight: 600; }
+  .edu-line .org { color: var(--ink-soft); }
+
+  .lang { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 12.5px; color: var(--ink-soft); }
+  .lang b { color: var(--ink); font-weight: 600; }
+
+  .ph { color: #b45309; } /* placeholder highlight — remove styling once filled */
+
+  /* ---------- Print ---------- */
+  @media print {
+    html, body { background: #fff; }
+    .page {
+      box-shadow: none;
+      margin: 0;
+      max-width: none;
+      border-radius: 0;
+      padding: 0;
+    }
+    @page { size: A4; margin: 14mm 16mm; }
+    section, .item { break-inside: avoid; }
+    .ph { color: inherit; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1 class="name">Ivan <span class="ph">[ surname ]</span></h1>
+    <p class="title">Full-Cycle Product Developer</p>
+    <p class="tagline">Design → Web → Backend → Mobile, shipped end to end.</p>
+    <div class="contact">
+      <span><b>Location</b> Georgia · Remote</span>
+      <span><b>GitHub</b> github.com/w1ckedxd</span>
+      <span><b>Org</b> Grayscaled-Software</span>
+      <span><b>Email</b> <span class="ph">[ your email ]</span></span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Summary</h2>
+    <p class="summary">
+      Full-cycle product developer who <strong>designs and builds</strong> complete
+      products end to end — UI/UX, JavaScript frontends, PHP/WordPress/WooCommerce
+      backends, and cross-platform Flutter apps from a single codebase. Specialized
+      in <strong>e-commerce</strong>: turning WooCommerce stores into fast web, PWA,
+      and native mobile experiences driven by one backend. Comfortable owning the
+      whole stack — design, code, localization, Docker, and CI/CD — so clients get a
+      finished product from one person instead of coordinating a team.
+    </p>
+  </section>
+
+  <section>
+    <h2>Specialty</h2>
+    <p class="specialty">
+      <b>E-commerce — WooCommerce → Flutter.</b> One backend serving web + PWA +
+      native mobile (FluxStore), with synced cart/wishlist, multi-language, and
+      OTP authentication.
+    </p>
+  </section>
+
+  <section>
+    <h2>Skills</h2>
+    <div class="skills">
+      <div class="skill"><span class="k">Design</span> <span class="v">— UI/UX, responsive, design systems</span></div>
+      <div class="skill"><span class="k">Frontend</span> <span class="v">— JavaScript, PWA, responsive web</span></div>
+      <div class="skill"><span class="k">Backend</span> <span class="v">— PHP, WordPress, WooCommerce, REST APIs</span></div>
+      <div class="skill"><span class="k">Mobile</span> <span class="v">— Flutter (iOS &amp; Android), FluxStore</span></div>
+      <div class="skill"><span class="k">Platform</span> <span class="v">— Docker, CI/CD, monorepo, i18n</span></div>
+      <div class="skill"><span class="k">Auth &amp; billing</span> <span class="v">— OAuth, email/SMS OTP, subscriptions</span></div>
+      <div class="skill"><span class="k">AI</span> <span class="v">— Telegram bots, conversational AI, memory</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Selected Projects</h2>
+
+    <div class="item">
+      <div class="item-head">
+        <p class="item-title">Hellride — E-commerce platform (web + PWA + mobile)</p>
+        <span class="item-meta">Core developer</span>
+      </div>
+      <p class="item-desc">
+        A skate-shop product on <b>one WooCommerce backend</b> serving three surfaces
+        from a single monorepo: a responsive storefront, an installable PWA, and a
+        native Flutter app.
+      </p>
+      <ul class="bullets">
+        <li>Synced cart &amp; wishlist across web, PWA, and mobile</li>
+        <li>3 locales — English, Georgian, Russian</li>
+        <li>Mobile OAuth + email &amp; SMS OTP registration</li>
+        <li>Containerized with Docker, shipped via CI/CD</li>
+      </ul>
+      <p class="stack"><b>Stack:</b> WooCommerce / WordPress · PHP · JavaScript · Flutter · Docker · CI/CD</p>
+    </div>
+
+    <div class="item">
+      <div class="item-head">
+        <p class="item-title">Conversational AI platform — Telegram</p>
+        <span class="item-meta">Solo developer</span>
+      </div>
+      <p class="item-desc">
+        A subscription-based conversational-AI product on Telegram, designed and built
+        end to end — product, code, and billing.
+      </p>
+      <ul class="bullets">
+        <li>Bot logic, persistent per-user memory, and adaptive personas</li>
+        <li>Freemium model with recurring subscription billing via Telegram Stars</li>
+        <li>Owned-audience distribution with a backup payment rail</li>
+      </ul>
+      <p class="stack"><b>Stack:</b> <span class="ph">[ Node / Python ]</span> · Telegram Bot API · Telegram Stars</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Experience</h2>
+    <div class="item">
+      <div class="item-head">
+        <p class="item-title">Freelance Full-Cycle Developer — Grayscaled-Software</p>
+        <span class="item-meta"><span class="ph">[ year ]</span> – present</span>
+      </div>
+      <p class="item-desc">
+        Design and build complete web + mobile products for clients, specializing in
+        WooCommerce e-commerce extended to PWA and native Flutter apps.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Education</h2>
+    <div class="edu-line">
+      <span class="deg">B.Sc.</span>
+      <span class="org">Saint Petersburg State Forest Technical University</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Languages</h2>
+    <div class="lang">
+      <span><b>Russian</b> <span class="ph">[ level ]</span></span>
+      <span><b>English</b> professional working</span>
+      <span><b>Georgian</b> <span class="ph">[ level ]</span></span>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
