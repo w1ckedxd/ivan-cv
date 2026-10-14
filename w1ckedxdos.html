@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>w1ckedxdOS — Ivan</title>
+<style>
+/* ============================================================
+   w1ckedxdOS — an interactive résumé desktop
+   Grayscale / monochrome brand skin + one restrained accent.
+   Single file, vanilla JS/CSS, no build, Pages-ready.
+   ============================================================ */
+
+:root {
+  --bg:        #0b0b0d;
+  --wall-1:    #16161a;
+  --wall-2:    #0a0a0c;
+  --panel:     rgba(30,30,34,.66);   /* translucent chrome (menubar/dock) */
+  --win:       #141417;
+  --win-bar:   #1b1b1f;
+  --text:      #ececee;
+  --muted:     #9a9aa2;
+  --faint:     #66666d;
+  --line:      rgba(255,255,255,.09);
+  --line-2:    rgba(255,255,255,.05);
+  --accent:    #6ea8fe;
+  --accent-ink:#0b0b0d;
+  --accent-soft: rgba(110,168,254,.16);
+  --shadow:    0 30px 80px rgba(0,0,0,.55), 0 8px 24px rgba(0,0,0,.4);
+  --radius:    12px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Monaco, "Cascadia Code", "Roboto Mono", monospace;
+}
+html[data-theme="light"] {
+  --bg:        #e9e9ec;
+  --wall-1:    #f4f4f6;
+  --wall-2:    #d8d8dd;
+  --panel:     rgba(255,255,255,.62);
+  --win:       #fbfbfc;
+  --win-bar:   #f0f0f2;
+  --text:      #16161a;
+  --muted:     #5c5c64;
+  --faint:     #8e8e96;
+  --line:      rgba(0,0,0,.12);
+  --line-2:    rgba(0,0,0,.06);
+  --accent:    #2f6fe0;
+  --accent-soft: rgba(47,111,224,.12);
+  --shadow:    0 30px 70px rgba(0,0,0,.22), 0 8px 20px rgba(0,0,0,.14);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+button { font-family: inherit; color: inherit; cursor: pointer; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------------- Wallpaper ---------------- */
+#desktop {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(1200px 800px at 78% -10%, rgba(110,168,254,.10), transparent 60%),
+    radial-gradient(900px 700px at 12% 110%, rgba(255,255,255,.05), transparent 55%),
+    linear-gradient(160deg, var(--wall-1), var(--wall-2));
+  opacity: 0;
+  transition: opacity .6s ease;
+}
+#desktop.on { opacity: 1; }
+/* faint monogram watermark */
+#desktop::after {
+  content: "w1";
+  position: absolute; right: 4vw; bottom: 8vh;
+  font-weight: 800; font-size: 40vh; line-height: .8;
+  letter-spacing: -.05em;
+  color: rgba(255,255,255,.025);
+  pointer-events: none;
+}
+
+/* ---------------- Menu bar ---------------- */
+#menubar {
+  position: fixed; top: 0; left: 0; right: 0; height: 30px; z-index: 9000;
+  display: flex; align-items: center; gap: 2px; padding: 0 12px;
+  background: var(--panel);
+  backdrop-filter: saturate(160%) blur(22px);
+  -webkit-backdrop-filter: saturate(160%) blur(22px);
+  border-bottom: 1px solid var(--line-2);
+  font-size: 13px;
+}
+#menubar .logo { font-weight: 800; letter-spacing: -.02em; padding: 0 8px 0 2px; }
+#menubar .mi { padding: 3px 9px; border-radius: 6px; color: var(--text); }
+#menubar .mi.app { font-weight: 650; }
+#menubar .mi:hover { background: rgba(255,255,255,.1); }
+#menubar .spacer { flex: 1; }
+#menubar .status { display: flex; align-items: center; gap: 10px; color: var(--text); }
+#menubar .status .ic { opacity: .9; font-size: 12px; }
+#menubar .clock { font-variant-numeric: tabular-nums; min-width: 128px; text-align: right; }
+#menubar .tbtn { padding: 2px 6px; border-radius: 6px; background: none; border: 0; font-size: 13px; }
+#menubar .tbtn:hover { background: rgba(255,255,255,.1); }
+
+/* ---------------- Desktop icons ---------------- */
+.desk-ico {
+  position: absolute; width: 84px; text-align: center; cursor: default;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.desk-ico .glyph {
+  width: 52px; height: 52px; border-radius: 10px;
+  display: grid; place-items: center; font-size: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04));
+  border: 1px solid var(--line); box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+.desk-ico .lbl { font-size: 11.5px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7); padding: 1px 5px; border-radius: 4px; }
+html[data-theme="light"] .desk-ico .lbl { color:#111; text-shadow:none; }
+.desk-ico:hover .glyph { outline: 2px solid var(--accent-soft); }
+
+/* ---------------- Windows ---------------- */
+.window {
+  position: absolute; display: none; flex-direction: column;
+  min-width: 340px; min-height: 200px;
+  background: var(--win); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  overflow: hidden; z-index: 100;
+}
+.window.open { display: flex; animation: winopen .22s cubic-bezier(.2,.8,.2,1); }
+@keyframes winopen { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; } }
+.window.max { border-radius: 0; }
+.window.minimizing { animation: winmin .25s ease forwards; }
+@keyframes winmin { to { opacity: 0; transform: scale(.4) translateY(60vh); } }
+
+.titlebar {
+  height: 40px; flex: 0 0 40px; display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; background: var(--win-bar);
+  border-bottom: 1px solid var(--line-2); cursor: default;
+}
+.lights { display: flex; gap: 8px; }
+.light { width: 12px; height: 12px; border-radius: 50%; display: grid; place-items: center;
+         font-size: 9px; color: rgba(0,0,0,.55); line-height: 1; border: none; }
+.light span { opacity: 0; }
+.lights:hover .light span { opacity: 1; }
+.light.c { background: #ff5f57; }
+.light.m { background: #febc2e; }
+.light.z { background: #28c840; }
+.titlebar .wtitle { font-size: 13px; font-weight: 600; color: var(--muted); flex: 1; text-align: center;
+                    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 54px; }
+.wbody { flex: 1; overflow: auto; }
+.wbody::-webkit-scrollbar { width: 10px; height: 10px; }
+.wbody::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+
+/* ---------------- Dock ---------------- */
+#dock {
+  position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 9000;
+  display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px;
+  background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: 20px; backdrop-filter: saturate(160%) blur(22px);
+  -webkit-backdrop-filter: saturate(160%) blur(22px);
+  box-shadow: 0 18px 50px rgba(0,0,0,.5);
+}
+.dock-app { position: relative; width: 50px; height: 50px; border: 0; background: none; padding: 0;
+            transition: transform .18s cubic-bezier(.2,.8,.2,1); transform-origin: bottom center; }
+.dock-app .icon {
+  width: 50px; height: 50px; border-radius: 13px; display: grid; place-items: center; font-size: 24px;
+  background: linear-gradient(180deg, #2a2a30, #202024); border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 6px 14px rgba(0,0,0,.4);
+}
+html[data-theme="light"] .dock-app .icon { background: linear-gradient(180deg,#fff,#e9e9ee); }
+.dock-app:hover { transform: translateY(-10px) scale(1.12); }
+.dock-app .tip {
+  position: absolute; bottom: 62px; left: 50%; transform: translateX(-50%);
+  background: rgba(20,20,22,.95); color: #fff; font-size: 12px; padding: 4px 9px; border-radius: 7px;
+  white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s; border: 1px solid var(--line);
+}
+.dock-app:hover .tip { opacity: 1; }
+.dock-app .run { position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+                 width: 4px; height: 4px; border-radius: 50%; background: var(--text); opacity: 0; }
+.dock-app.running .run { opacity: .8; }
+.dock-sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--line); }
+
+/* ---------------- Generic content styles ---------------- */
+.pad { padding: 22px 26px; }
+.app-hero { display: flex; gap: 18px; align-items: center; padding: 24px 26px 8px; }
+.mono-badge { width: 72px; height: 72px; border-radius: 16px; display: grid; place-items: center;
+  font-weight: 800; font-size: 30px; letter-spacing: -.04em;
+  background: linear-gradient(145deg,#2b2b31,#17171a); border: 1px solid var(--line); color: var(--text); }
+h1.big { font-size: 26px; letter-spacing: -.02em; }
+.role { color: var(--accent); font-weight: 600; font-size: 14px; margin-top: 2px; }
+.sub  { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.sect-label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin: 18px 0 8px; }
+.body-txt { font-size: 13.5px; line-height: 1.6; color: #d4d4d8; }
+html[data-theme="light"] .body-txt { color:#2a2a30; }
+.body-txt strong { color: var(--text); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 11.5px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.06);
+        border: 1px solid var(--line); color: var(--muted); font-family: var(--mono); }
+.ph { color: #e0a33a; }
+.rowmeta { display:flex; flex-wrap:wrap; gap:6px 18px; font-size:12.5px; color:var(--muted); }
+.rowmeta b { color: var(--text); font-weight:600; }
+
+/* Finder (projects) */
+.finder { display: flex; height: 100%; }
+.finder .side { width: 160px; flex: 0 0 160px; border-right: 1px solid var(--line-2); padding: 12px 8px; background: rgba(255,255,255,.015); }
+.finder .side h5 { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin: 8px 8px 4px; }
+.finder .side button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0;
+  padding: 6px 8px; border-radius: 7px; font-size: 13px; color: var(--text); }
+.finder .side button.active, .finder .side button:hover { background: var(--accent-soft); }
+.finder .main { flex: 1; overflow: auto; padding: 16px 18px; }
+.proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 14px; }
+.proj-card { background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 10px; padding: 14px; cursor: pointer;
+             transition: transform .15s, border-color .15s; }
+.proj-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.proj-card .pico { font-size: 30px; }
+.proj-card .pname { font-weight: 650; font-size: 13.5px; margin-top: 8px; }
+.proj-card .ptag { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.back-btn { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; font-size: 12.5px; color: var(--text); margin-bottom: 14px; }
+.bullets { margin: 8px 0 0 0; padding-left: 18px; }
+.bullets li { font-size: 13px; line-height: 1.55; color: #cfcfd4; margin: 3px 0; }
+html[data-theme="light"] .bullets li { color:#33333a; }
+
+/* Terminal */
+.term { background: #0c0c0e; height: 100%; padding: 14px 16px; font-family: var(--mono); font-size: 12.5px;
+        line-height: 1.55; color: #d6d6da; overflow: auto; }
+html[data-theme="light"] .term { background:#141417; color:#e4e4e8; }
+.term .line { white-space: pre-wrap; word-break: break-word; }
+.term .accent { color: var(--accent); }
+.term .dim { color: var(--faint); }
+.term .ok { color: #4cd07d; }
+.term-input { display: flex; gap: 8px; }
+.term-input .ps1 { color: var(--accent); white-space: nowrap; }
+.term-input input { flex: 1; background: none; border: 0; outline: 0; color: inherit; font-family: var(--mono); font-size: 12.5px; }
+.term .cursor { display:inline-block; width:7px; height:14px; background:var(--accent); vertical-align:middle; animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Contact */
+.c-list { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.c-row { display: flex; align-items: center; gap: 12px; padding: 11px 10px; border-radius: 9px; }
+.c-row:hover { background: rgba(255,255,255,.04); }
+.c-row .ci { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 16px; background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+.c-row .ck { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .08em; }
+.c-row .cv { font-size: 14px; }
+.c-row .copy { margin-left: auto; font-size: 11.5px; padding: 4px 10px; border-radius: 7px; background: var(--accent-soft); border: 1px solid var(--line); color: var(--text); }
+
+/* Résumé (Preview) */
+.preview-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line-2); background: var(--win-bar); }
+.preview-bar .pbtn { font-size: 12.5px; padding: 5px 11px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); border: 0; font-weight: 600; }
+.preview-bar .plabel { font-size: 12.5px; color: var(--muted); }
+.preview-frame { flex: 1; border: 0; width: 100%; background: #fff; }
+
+/* ---------------- Boot / login ---------------- */
+#boot {
+  position: fixed; inset: 0; z-index: 10000;
+  background: radial-gradient(1000px 700px at 50% 35%, #1a1a1f, #070708);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  transition: opacity .55s ease, visibility .55s;
+}
+#boot.gone { opacity: 0; visibility: hidden; }
+#boot .avatar { width: 108px; height: 108px; border-radius: 50%;
+  background: linear-gradient(145deg,#33333a,#161619); border: 1px solid var(--line);
+  display: grid; place-items: center; font-weight: 800; font-size: 44px; letter-spacing: -.04em; color: #fff;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+#boot .uname { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+#boot .osname { position: absolute; top: 40px; left: 0; right: 0; text-align: center; color: var(--faint); font-size: 13px; letter-spacing: .3em; text-transform: uppercase; }
+#boot .bootclock { position: absolute; top: 50%; transform: translateY(-260px); font-size: 68px; font-weight: 300; color: #fff; font-variant-numeric: tabular-nums; }
+#boot .enter { padding: 10px 26px; border-radius: 999px; background: rgba(255,255,255,.1);
+  border: 1px solid var(--line); color: #fff; font-size: 14px; backdrop-filter: blur(10px); transition: background .15s, transform .15s; }
+#boot .enter:hover { background: rgba(255,255,255,.2); transform: scale(1.03); }
+#boot .hint { color: var(--faint); font-size: 12px; }
+
+/* ---------------- Mobile fallback ---------------- */
+#mobile { display: none; }
+@media (max-width: 760px), (pointer: coarse) and (max-width: 900px) {
+  #boot, #desktop, #menubar, #dock { display: none !important; }
+  body { overflow: auto; user-select: text; background: linear-gradient(170deg,var(--wall-1),var(--wall-2)); }
+  #mobile { display: block; max-width: 640px; margin: 0 auto; padding: 30px 20px 60px; }
+  #mobile .m-hero { display:flex; gap:14px; align-items:center; }
+  #mobile .m-badge { width:58px; height:58px; border-radius:14px; display:grid; place-items:center; font-weight:800; font-size:24px;
+    background:linear-gradient(145deg,#2b2b31,#17171a); border:1px solid var(--line); }
+  #mobile h1 { font-size:24px; letter-spacing:-.02em; }
+  #mobile .m-role { color: var(--accent); font-weight:600; font-size:13px; }
+  #mobile .m-note { margin-top:10px; font-size:11.5px; color:var(--faint); border:1px dashed var(--line); border-radius:8px; padding:8px 10px; }
+  #mobile .m-sect { margin-top: 26px; }
+  #mobile .m-sect h2 { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; }
+  #mobile p.m-body { font-size:14px; line-height:1.6; color:#d4d4d8; }
+  #mobile .m-card { background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px; }
+  #mobile .m-card h3 { font-size:15px; }
+  #mobile .m-card .ptag { font-size:12px; color:var(--muted); margin:2px 0 8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ====================== BOOT / LOGIN ====================== -->
+<div id="boot">
+  <div class="osname">w1ckedxdOS</div>
+  <div class="bootclock" id="bootClock">--:--</div>
+  <div class="avatar">I</div>
+  <div class="uname">Ivan</div>
+  <button class="enter" id="enterBtn">Log in</button>
+  <div class="hint">full-cycle product developer · design → web → backend → mobile</div>
+</div>
+
+<!-- ====================== DESKTOP ====================== -->
+<div id="desktop">
+
+  <!-- Menu bar -->
+  <div id="menubar">
+    <span class="logo">◆</span>
+    <span class="mi app" id="activeApp">Finder</span>
+    <span class="mi">File</span>
+    <span class="mi">Edit</span>
+    <span class="mi">View</span>
+    <span class="mi">Window</span>
+    <span class="mi">Help</span>
+    <span class="spacer"></span>
+    <span class="status">
+      <button class="tbtn" id="themeBtn" title="Toggle theme">◐</button>
+      <span class="ic">⌁</span>
+      <span class="ic">◉</span>
+      <span class="ic">🔍</span>
+      <span class="clock" id="clock">—</span>
+    </span>
+  </div>
+
+  <!-- Desktop icon -->
+  <div class="desk-ico" style="top:48px; right:34px;" data-open="resume">
+    <div class="glyph">📄</div><div class="lbl">Résumé.pdf</div>
+  </div>
+
+  <!-- ===== Windows ===== -->
+
+  <!-- About -->
+  <div class="window" id="win-about" data-app="about" style="width:520px;height:460px;left:120px;top:90px;">
+    <div class="titlebar">
+      <div class="lights">
+        <button class="light c" data-act="close"><span>×</span></button>
+        <button class="light m" data-act="min"><span>–</span></button>
+        <button class="light z" data-act="max"><span>+</span></button>
+      </div>
+      <div class="wtitle">About — Ivan</div>
+    </div>
+    <div class="wbody">
+      <div class="app-hero">
+        <div class="mono-badge">I</div>
+        <div>
+          <h1 class="big">Ivan <span class="ph">[surname]</span></h1>
+          <div class="role">Full-Cycle Product Developer</div>
+          <div class="sub">Design → Web → Backend → Mobile · Georgia · Remote</div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:6px;">
+        <div class="sect-label">Summary</div>
+        <p class="body-txt">I <strong>design and build</strong> complete products end to end — UI/UX, JavaScript
+        frontends, PHP/WordPress/WooCommerce backends, and cross-platform Flutter apps from a single codebase.
+        Specialized in <strong>e-commerce</strong>: turning WooCommerce stores into fast web, PWA, and native
+        mobile experiences driven by one backend.</p>
+        <div class="sect-label">Specialty</div>
+        <p class="body-txt"><strong>WooCommerce → Flutter.</strong> One backend serving web + PWA + native mobile
+        (FluxStore), with synced cart/wishlist, multi-language, and OTP auth.</p>
+        <div class="sect-label">Details</div>
+        <div class="rowmeta">
+          <span><b>Education</b> B.Sc., Saint Petersburg State Forest Technical University</span>
+          <span><b>Org</b> Grayscaled-Software</span>
+          <span><b>Languages</b> Russian <span class="ph">[lvl]</span> · English (working) · Georgian <span class="ph">[lvl]</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projects (Finder) -->
+  <div class="window" id="win-projects" data-app="projects" style="width:640px;height:460px;left:200px;top:120px;">
+    <div class="titlebar">
+      <div class="lights">
+        <button class="light c" data-act="close"><span>×</span></button>
+        <button class="light m" data-act="min"><span>–</span></button>
+        <button class="light z" data-act="max"><span>+</span></button>
+      </div>
+      <div class="wtitle">Projects</div>
+    </div>
+    <div class="wbody">
+      <div class="finder">
+        <div class="side">
+          <h5>Filter</h5>
+          <button class="active" data-filter="all">📁 All Projects</button>
+          <button data-filter="web">🌐 Web</button>
+          <button data-filter="mobile">📱 Mobile</button>
+          <button data-filter="ai">🤖 AI</button>
+        </div>
+        <div class="main" id="finderMain"><!-- rendered by JS --></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terminal -->
+  <div class="window" id="win-terminal" data-app="terminal" style="width:560px;height:400px;left:300px;top:150px;">
+    <div class="titlebar" style="background:#131316;">
+      <div class="lights">
+        <button class="light c" data-act="close"><span>×</span></button>
+        <button class="light m" data-act="min"><span>–</span></button>
+        <button class="light z" data-act="max"><span>+</span></button>
+      </div>
+      <div class="wtitle">Terminal — ivan@w1ckedxdOS</div>
+    </div>
+    <div class="wbody">
+      <div class="term" id="term">
+        <div class="line" id="termOut"></div>
+        <div class="term-input">
+          <span class="ps1">ivan@w1ckedxdOS ~ %</span>
+          <input id="termIn" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact (Mail) -->
+  <div class="window" id="win-contact" data-app="contact" style="width:460px;height:380px;left:260px;top:160px;">
+    <div class="titlebar">
+      <div class="lights">
+        <button class="light c" data-act="close"><span>×</span></button>
+        <button class="light m" data-act="min"><span>–</span></button>
+        <button class="light z" data-act="max"><span>+</span></button>
+      </div>
+      <div class="wtitle">Contact</div>
+    </div>
+    <div class="wbody">
+      <div class="pad">
+        <div class="sect-label">Get in touch</div>
+        <div class="c-list">
+          <div class="c-row">
+            <div class="ci">✉️</div>
+            <div><div class="ck">Email</div><div class="cv"><span class="ph">[ your email ]</span></div></div>
+            <button class="copy" data-copy="email">Copy</button>
+          </div>
+          <div class="c-row">
+            <div class="ci">🐙</div>
+            <div><div class="ck">GitHub</div><div class="cv"><a href="https://github.com/w1ckedxd" target="_blank" rel="noopener">github.com/w1ckedxd</a></div></div>
+          </div>
+          <div class="c-row">
+            <div class="ci">🏢</div>
+            <div><div class="ck">Organization</div><div class="cv"><a href="https://github.com/Grayscaled-Software" target="_blank" rel="noopener">Grayscaled-Software</a></div></div>
+          </div>
+          <div class="c-row">
+            <div class="ci">✈️</div>
+            <div><div class="ck">Telegram</div><div class="cv"><span class="ph">[ @handle ]</span></div></div>
+            <button class="copy" data-copy="tg">Copy</button>
+          </div>
+          <div class="c-row">
+            <div class="ci">📍</div>
+            <div><div class="ck">Location</div><div class="cv">Georgia · Remote (async, worldwide)</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Résumé (Preview) -->
+  <div class="window" id="win-resume" data-app="resume" style="width:720px;height:560px;left:160px;top:70px;">
+    <div class="titlebar">
+      <div class="lights">
+        <button class="light c" data-act="close"><span>×</span></button>
+        <button class="light m" data-act="min"><span>–</span></button>
+        <button class="light z" data-act="max"><span>+</span></button>
+      </div>
+      <div class="wtitle">Résumé.pdf — Preview</div>
+    </div>
+    <div class="preview-bar">
+      <button class="pbtn" id="openResume">Open / Download PDF ↗</button>
+      <span class="plabel">The clean, scannable one-pager — for actual applications.</span>
+    </div>
+    <iframe class="preview-frame" id="resumeFrame" title="Résumé"></iframe>
+  </div>
+
+  <!-- Dock -->
+  <div id="dock">
+    <button class="dock-app" data-open="about"><span class="tip">About</span><span class="icon">👤</span><span class="run"></span></button>
+    <button class="dock-app" data-open="projects"><span class="tip">Projects</span><span class="icon">🗂️</span><span class="run"></span></button>
+    <button class="dock-app" data-open="terminal"><span class="tip">Terminal</span><span class="icon">⌨️</span><span class="run"></span></button>
+    <button class="dock-app" data-open="contact"><span class="tip">Contact</span><span class="icon">✉️</span><span class="run"></span></button>
+    <button class="dock-app" data-open="resume"><span class="tip">Résumé.pdf</span><span class="icon">📄</span><span class="run"></span></button>
+    <div class="dock-sep"></div>
+    <button class="dock-app" data-link="https://github.com/w1ckedxd"><span class="tip">GitHub ↗</span><span class="icon">🐙</span></button>
+  </div>
+</div>
+
+<!-- ====================== MOBILE FALLBACK ====================== -->
+<div id="mobile">
+  <div class="m-hero">
+    <div class="m-badge">I</div>
+    <div>
+      <h1>Ivan</h1>
+      <div class="m-role">Full-Cycle Product Developer</div>
+    </div>
+  </div>
+  <div class="m-note">Tip: open on a desktop to experience <b>w1ckedxdOS</b> — the interactive version.</div>
+
+  <div class="m-sect">
+    <h2>Summary</h2>
+    <p class="m-body">I design and build complete products end to end — UI/UX, JS frontends,
+    PHP/WordPress/WooCommerce backends, and cross-platform Flutter apps from one codebase. Specialty:
+    e-commerce — WooCommerce stores turned into fast web, PWA, and native mobile experiences from one backend.</p>
+  </div>
+
+  <div class="m-sect">
+    <h2>Selected Work</h2>
+    <div class="m-card">
+      <h3>Hellride — e-commerce (web + PWA + mobile)</h3>
+      <div class="ptag">WooCommerce · Flutter · Docker · CI/CD</div>
+      <p class="m-body">One WooCommerce backend serving a storefront, an installable PWA, and a native Flutter app
+      from a single monorepo. Synced cart/wishlist across all three, 3 locales (EN/KA/RU), OAuth + email/SMS OTP.</p>
+    </div>
+    <div class="m-card">
+      <h3>Conversational AI platform — Telegram</h3>
+      <div class="ptag">Solo · Telegram Bot API · Telegram Stars</div>
+      <p class="m-body">Subscription-based conversational-AI product built end to end: bot logic, persistent
+      per-user memory, adaptive personas, and recurring subscription billing.</p>
+    </div>
+  </div>
+
+  <div class="m-sect">
+    <h2>Stack</h2>
+    <p class="m-body">UI/UX · JavaScript · PWA · PHP · WordPress · WooCommerce · Flutter (iOS &amp; Android) ·
+    FluxStore · Docker · CI/CD · i18n · OAuth / OTP</p>
+  </div>
+
+  <div class="m-sect">
+    <h2>Contact</h2>
+    <p class="m-body">GitHub: <a href="https://github.com/w1ckedxd">@w1ckedxd</a> · Org: Grayscaled-Software · Georgia · Remote</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   w1ckedxdOS runtime
+   ============================================================ */
+(function () {
+  "use strict";
+
+  /* ---------- Clock ---------- */
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function fmtTime(d){ var h=d.getHours(); var ap=h>=12?'PM':'AM'; var h12=h%12||12;
+    return h12+':'+pad(d.getMinutes())+' '+ap; }
+  function fmtBar(d){
+    var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return days[d.getDay()]+' '+mons[d.getMonth()]+' '+d.getDate()+'  '+fmtTime(d);
+  }
+  var clock=document.getElementById('clock'), bootClock=document.getElementById('bootClock');
+  function tick(){ var d=new Date(); if(clock) clock.textContent=fmtBar(d); if(bootClock) bootClock.textContent=fmtTime(d).replace(/ (AM|PM)/,''); }
+  tick(); setInterval(tick,1000);
+
+  /* ---------- Boot / login ---------- */
+  var boot=document.getElementById('boot'), desktop=document.getElementById('desktop');
+  function login(){ boot.classList.add('gone'); desktop.classList.add('on');
+    setTimeout(function(){ openApp('about'); }, 450); }
+  document.getElementById('enterBtn').addEventListener('click', login);
+  boot.addEventListener('click', function(e){ if(e.target===boot) login(); });
+
+  /* ---------- Theme ---------- */
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    var h=document.documentElement;
+    h.setAttribute('data-theme', h.getAttribute('data-theme')==='dark' ? 'light' : 'dark');
+  });
+
+  /* ---------- Window manager ---------- */
+  var z=100;
+  var titleOf={ about:'About', projects:'Projects', terminal:'Terminal', contact:'Contact', resume:'Résumé.pdf' };
+  function win(app){ return document.getElementById('win-'+app); }
+  function dockBtn(app){ return document.querySelector('.dock-app[data-open="'+app+'"]'); }
+
+  function focusWin(w){ w.style.zIndex=++z;
+    var app=w.getAttribute('data-app');
+    document.getElementById('activeApp').textContent=titleOf[app]||'Finder';
+  }
+  function openApp(app){
+    var w=win(app); if(!w) return;
+    w.classList.remove('minimizing');
+    if(!w.classList.contains('open')){
+      // cascade if first open handled by inline style; ensure on screen
+      w.classList.add('open');
+    }
+    w.style.display='flex';
+    focusWin(w);
+    var db=dockBtn(app); if(db) db.classList.add('running');
+    if(app==='terminal') setTimeout(function(){ document.getElementById('termIn').focus(); },50);
+    if(app==='resume') loadResume();
+    if(app==='projects') renderFinder(curFilter);
+  }
+  function closeApp(w){ w.classList.remove('open'); w.style.display='none';
+    var db=dockBtn(w.getAttribute('data-app')); if(db) db.classList.remove('running'); }
+  function minApp(w){ w.classList.add('minimizing');
+    setTimeout(function(){ w.classList.remove('minimizing'); w.style.display='none'; w.classList.remove('open'); }, 240); }
+  function maxApp(w){
+    if(w.classList.contains('max')){ w.classList.remove('max'); w._restore && w._restore(); }
+    else {
+      w._restore=(function(){ var s={l:w.style.left,t:w.style.top,wd:w.style.width,h:w.style.height};
+        return function(){ w.style.left=s.l; w.style.top=s.t; w.style.width=s.wd; w.style.height=s.h; }; })();
+      w.classList.add('max'); w.style.left='0'; w.style.top='30px'; w.style.width='100vw'; w.style.height='calc(100vh - 30px)';
+    }
+  }
+
+  // dock + desktop icons
+  document.querySelectorAll('[data-open]').forEach(function(el){
+    el.addEventListener('click', function(){ openApp(el.getAttribute('data-open')); });
+  });
+  document.querySelectorAll('[data-link]').forEach(function(el){
+    el.addEventListener('click', function(){ window.open(el.getAttribute('data-link'),'_blank','noopener'); });
+  });
+
+  // window controls + focus + drag
+  document.querySelectorAll('.window').forEach(function(w){
+    w.addEventListener('mousedown', function(){ focusWin(w); });
+    w.querySelectorAll('.light').forEach(function(btn){
+      btn.addEventListener('click', function(e){ e.stopPropagation();
+        var a=btn.getAttribute('data-act');
+        if(a==='close') closeApp(w); else if(a==='min') minApp(w); else if(a==='max') maxApp(w);
+      });
+    });
+    // drag by titlebar
+    var bar=w.querySelector('.titlebar');
+    bar.addEventListener('pointerdown', function(e){
+      if(e.target.closest('.light')) return;
+      if(w.classList.contains('max')) return;
+      var sx=e.clientX, sy=e.clientY;
+      var rect=w.getBoundingClientRect(); var ox=rect.left, oy=rect.top;
+      focusWin(w);
+      function move(ev){
+        var nx=ox+(ev.clientX-sx), ny=Math.max(30, oy+(ev.clientY-sy));
+        nx=Math.min(Math.max(nx, -rect.width+80), window.innerWidth-80);
+        w.style.left=nx+'px'; w.style.top=ny+'px';
+      }
+      function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); }
+      document.addEventListener('pointermove',move); document.addEventListener('pointerup',up);
+    });
+  });
+
+  /* ---------- Projects / Finder ---------- */
+  var PROJECTS=[
+    { id:'hellride', icon:'🛹', name:'Hellride', tag:'E-commerce platform', cats:['web','mobile'],
+      role:'Core developer', stack:['WooCommerce','PHP','JavaScript','Flutter','Docker','CI/CD'],
+      blurb:'One WooCommerce backend serving three surfaces from a single monorepo: a responsive storefront, an installable PWA, and a native Flutter app.',
+      bullets:['Synced cart & wishlist across web, PWA, and mobile','3 locales — English, Georgian, Russian',
+               'Mobile OAuth + email & SMS OTP registration','Containerized with Docker, shipped via CI/CD'] },
+    { id:'lina', icon:'🤖', name:'AI Platform', tag:'Conversational AI (Telegram)', cats:['ai'],
+      role:'Solo developer', stack:['Telegram Bot API','Telegram Stars','[Node / Python]'],
+      blurb:'A subscription-based conversational-AI product on Telegram, designed and built end to end — product, code, and billing.',
+      bullets:['Bot logic, persistent per-user memory, and adaptive personas','Freemium model with recurring subscription billing via Telegram Stars',
+               'Owned-audience distribution with a backup payment rail'] }
+  ];
+  var curFilter='all';
+  var finderMain=document.getElementById('finderMain');
+  function renderFinder(filter){
+    curFilter=filter;
+    var list=PROJECTS.filter(function(p){ return filter==='all'||p.cats.indexOf(filter)>=0; });
+    var html='<div class="proj-grid">';
+    list.forEach(function(p){
+      html+='<div class="proj-card" data-proj="'+p.id+'"><div class="pico">'+p.icon+'</div>'+
+            '<div class="pname">'+p.name+'</div><div class="ptag">'+p.tag+'</div></div>';
+    });
+    html+='</div>';
+    finderMain.innerHTML=html;
+    finderMain.querySelectorAll('.proj-card').forEach(function(c){
+      c.addEventListener('click', function(){ renderDetail(c.getAttribute('data-proj')); });
+    });
+  }
+  function renderDetail(id){
+    var p=PROJECTS.filter(function(x){return x.id===id;})[0]; if(!p) return;
+    var chips=p.stack.map(function(s){ var ph=/\[.*\]/.test(s)?' ph':''; return '<span class="chip'+ph+'">'+s+'</span>'; }).join('');
+    var bl=p.bullets.map(function(b){ return '<li>'+b+'</li>'; }).join('');
+    finderMain.innerHTML=
+      '<button class="back-btn" id="backBtn">‹ All Projects</button>'+
+      '<div style="display:flex;gap:14px;align-items:center;"><div style="font-size:40px;">'+p.icon+'</div>'+
+      '<div><div style="font-size:18px;font-weight:700;">'+p.name+'</div>'+
+      '<div class="sub">'+p.tag+' · '+p.role+'</div></div></div>'+
+      '<p class="body-txt" style="margin-top:14px;">'+p.blurb+'</p>'+
+      '<ul class="bullets">'+bl+'</ul>'+
+      '<div class="sect-label">Stack</div><div class="chips">'+chips+'</div>';
+    document.getElementById('backBtn').addEventListener('click', function(){ renderFinder(curFilter); });
+  }
+  document.querySelectorAll('.finder .side button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.finder .side button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active'); renderFinder(b.getAttribute('data-filter'));
+    });
+  });
+
+  /* ---------- Résumé preview ---------- */
+  var resumeLoaded=false;
+  function loadResume(){ if(resumeLoaded) return; document.getElementById('resumeFrame').src='cv.html'; resumeLoaded=true; }
+  document.getElementById('openResume').addEventListener('click', function(){ window.open('cv.html','_blank','noopener'); });
+
+  /* ---------- Contact copy ---------- */
+  document.querySelectorAll('.copy').forEach(function(b){
+    b.addEventListener('click', function(){
+      var v=b.previousElementSibling.querySelector('.cv').textContent.trim();
+      if(navigator.clipboard) navigator.clipboard.writeText(v);
+      var t=b.textContent; b.textContent='Copied'; setTimeout(function(){ b.textContent=t; },1200);
+    });
+  });
+
+  /* ---------- Terminal ---------- */
+  var out=document.getElementById('termOut'), inp=document.getElementById('termIn');
+  var history=[], hi=-1;
+  var LOGO=
+' __      __ ___ \n'+
+' \\ \\ /\\ / // _ \\   w1ckedxdOS 1.0\n'+
+'  \\ V  V /| | | |  ---------------\n'+
+'   \\_/\\_/ |_| |_|  developer: Ivan\n';
+  function print(html){ var d=document.createElement('div'); d.className='line'; d.innerHTML=html; out.appendChild(d);
+    var t=document.getElementById('term'); t.scrollTop=t.scrollHeight; }
+  var CMDS={
+    help:function(){ return 'available commands:\n'+
+      '  <span class="accent">about</span>     who I am\n'+
+      '  <span class="accent">skills</span>    what I do\n'+
+      '  <span class="accent">stack</span>     tools I use\n'+
+      '  <span class="accent">projects</span>  selected work\n'+
+      '  <span class="accent">contact</span>   how to reach me\n'+
+      '  <span class="accent">neofetch</span>  system info\n'+
+      '  <span class="accent">open</span> &lt;app&gt;  launch an app (about|projects|contact|resume)\n'+
+      '  <span class="accent">clear</span>     clear the screen\n'+
+      '  <span class="dim">try: sudo hire-me</span>'; },
+    whoami:function(){ return 'ivan — full-cycle product developer (design → web → backend → mobile)'; },
+    about:function(){ return 'Full-cycle product developer based in Georgia. I design AND build: UI/UX,\n'+
+      'JS frontends, PHP/WooCommerce backends, and Flutter apps from one codebase.\n'+
+      'Specialty: WooCommerce stores → web + PWA + native mobile from a single backend.'; },
+    skills:function(){ return 'design · ui/ux   frontend · javascript/pwa   backend · php/woocommerce\n'+
+      'mobile · flutter (ios+android)   platform · docker/ci-cd/i18n   auth · oauth/otp'; },
+    stack:function(){ return 'UI/UX  JavaScript  PWA  PHP  WordPress  WooCommerce  Flutter  FluxStore\nDocker  CI/CD  i18n  OAuth  OTP  Telegram Bot API'; },
+    projects:function(){ return '• <span class="accent">Hellride</span>   WooCommerce → web + PWA + Flutter, one monorepo (core dev)\n'+
+      '• <span class="accent">AI Platform</span>  Telegram subscription AI: memory, personas, Stars billing (solo)\n'+
+      '<span class="dim">tip: run "open projects" for details</span>'; },
+    contact:function(){ return 'github   <span class="accent">github.com/w1ckedxd</span>\norg      Grayscaled-Software\nemail    <span class="ph">[ add email ]</span>\nlocation Georgia · remote'; },
+    neofetch:function(){ return '<span class="accent">'+LOGO+'</span>'+
+      'OS: w1ckedxdOS 1.0 (grayscale)\nHost: Georgia, remote\nShell: full-cycle\n'+
+      'Role: mid-level · strong output\nSpecialty: e-commerce (WooCommerce + Flutter)\n'+
+      'Education: B.Sc. SPbFTU\nUptime: long hours, async'; },
+    clear:function(){ out.innerHTML=''; return ''; },
+    'sudo hire-me':function(){ return '<span class="ok">Permission granted.</span> Smart move. → run <span class="accent">contact</span>'; },
+    sudo:function(){ return 'usage: sudo hire-me'; }
+  };
+  function runCmd(raw){
+    var cmd=raw.trim();
+    print('<span class="ps1">ivan@w1ckedxdOS ~ %</span> '+escapeHtml(cmd));
+    if(!cmd) return;
+    history.push(cmd); hi=history.length;
+    var lower=cmd.toLowerCase();
+    if(lower.indexOf('open ')===0){
+      var app=lower.slice(5).trim();
+      if(['about','projects','contact','resume','terminal'].indexOf(app)>=0){ print('launching <span class="accent">'+app+'</span>…'); openApp(app); }
+      else print('open: unknown app "'+escapeHtml(app)+'"');
+      return;
+    }
+    var fn=CMDS[lower];
+    if(fn){ var r=fn(); if(r) print(r); }
+    else print('command not found: '+escapeHtml(cmd)+' <span class="dim">(try "help")</span>');
+  }
+  function escapeHtml(s){ return s.replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  inp.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ runCmd(inp.value); inp.value=''; }
+    else if(e.key==='ArrowUp'){ if(hi>0){ hi--; inp.value=history[hi]||''; } e.preventDefault(); }
+    else if(e.key==='ArrowDown'){ if(hi<history.length-1){ hi++; inp.value=history[hi]||''; } else { hi=history.length; inp.value=''; } e.preventDefault(); }
+  });
+  document.getElementById('term').addEventListener('click', function(){ inp.focus(); });
+  // greeting
+  print('<span class="dim">w1ckedxdOS 1.0 — type </span><span class="accent">help</span><span class="dim"> to begin.</span>');
+
+})();
+</script>
+</body>
+</html>
